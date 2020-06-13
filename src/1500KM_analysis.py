@@ -10,7 +10,7 @@ from Variables import *
 Name      = 'DSB IC3 5053' # 
 period    = ['120420','130520']
 Directory = '../OBU_Proxy'
-KM_TARGET = 3000
+KM_TARGET = 1500
 filtring_tag = 'comet_init'
 ODO       = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
 FLAG_LOAD = 0
