@@ -7,15 +7,16 @@ from Variables import *
 
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
-Name      = 'LT LINT41 2034' # 
-period    = ['290120','030320']
-Directory = 'OBU_Proxy'
+Name      = 'NJ Desiro 545 575' # 
+period    = ['010120','010620']
+filtring_tag = 'comet_init'
+Directory = '../OBU_Proxy'
 FLAG_LOAD = 0
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
 if(FLAG_LOAD == 0):
     print('Big load has been selected !'+'\r\n')
     Raw_data  = Rdp.extract_rawData(Directory, period)
-    M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt','14')
+    M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt',filtring_tag)
 else:
     M_treated = Rdp.decode_filtered_rawData_1('RawData_filtered.txt', 'RawData_length.txt')
 

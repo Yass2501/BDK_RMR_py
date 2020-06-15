@@ -7,10 +7,10 @@ from Variables import *
 
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
-Name      = 'DSB IC3 5053' # 
-period    = ['120420','130520']
+Name      = 'DSB MQ 4117' # 
+period    = ['010120','010620']
 Directory = '../OBU_Proxy'
-KM_TARGET = 3000
+KM_TARGET = 4500
 filtring_tag = 'comet_init'
 ODO       = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
 FLAG_LOAD = 0
