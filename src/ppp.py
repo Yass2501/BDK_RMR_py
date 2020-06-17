@@ -9,7 +9,7 @@ from Variables import *
 #----------------------------------------------------- Inputs ----------------------------------------------------
 Name   = 'DSB IC3 5039' # 
 period = ['010120','030120']
-Directory = 'OBU_Proxy'
+Directory = '../OBU_Proxy'
 filtering_tag = 'evc_tru'
 ODO    = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
 FLAG_LOAD = 0
