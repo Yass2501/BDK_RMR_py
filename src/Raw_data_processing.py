@@ -181,6 +181,8 @@ def extract_rawData(OBU_Proxy_dir, period):
     
     ListDir   = os.listdir('./'+OBU_Proxy_dir)  # List all directories present in OBU_proxy
     Raw_data_str = []
+    Messages = []
+    M_treated = []
     index_G1 = 0
     index_G1_end = 0
     dir_flag = 0
@@ -208,6 +210,7 @@ def extract_rawData(OBU_Proxy_dir, period):
                         index_G1 = data_str.find('<G1>')
                         index_G1_end = data_str.find('</G1>')+5
                         Raw_data_str.append(data_str[index_G1:index_G1_end])
+                        
                         #print(ascii(data_str[index_G1:index_G1_end]))
                         #Raw_data_str.append(data_str)
                 f.close()
@@ -228,6 +231,8 @@ def decode_filtered_rawData_0(Raw_data, Filename_out, File_len_rawdata, filterin
     for data in Raw_data:
         Index = findIndexof(data, ';', 8)
         OBU_DATA_TYPE = data[(Index[4]+1):Index[5]]
+        data_hex = bytes(OBU_DATA_TYPE, "utf-8")
+        TRU_NID_MESSAGE = data_hex[0:2]
         if(filtering_tag == 'report_md'):
             cond = ((OBU_DATA_TYPE == '2') and ((data.find(MOBILE_DEFECT_1) != -1) or (data.find(MOBILE_DEFECT_2) != -1))) or (OBU_DATA_TYPE == '14') or (OBU_DATA_TYPE == '2')
         elif(filtering_tag == 'comet_init'):
