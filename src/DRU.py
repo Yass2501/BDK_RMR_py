@@ -5,6 +5,7 @@ import Statistics_processing as Sp
 import numpy as np
 from functions import *
 from Variables import *
+from bit_bytes_manipulation import *
 
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
@@ -20,7 +21,7 @@ FLAG_LOAD = 0
 Raw_data  = Rdp.extract_rawData(Directory, period)
 M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt', filtering_tag)
 
-
+'''
 def hexToBin(x_hex):
     x_bin = ''
     if(x_hex == '0'):
@@ -58,7 +59,7 @@ def hexToBin(x_hex):
     else:
         exit(1)
     return x_bin
-
+'''
 def evc_dru_search(M_treated_in, type_of_search, data):
     M_treated_out = []
     LLRU_ID1   = 101 # Mobile 1
