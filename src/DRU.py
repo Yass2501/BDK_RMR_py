@@ -12,54 +12,16 @@ from bit_bytes_manipulation import *
 Name   = 'DSB MQ 4112' # 
 period = ['120219','130219']
 Directory = '../OBU_Proxy'
-filtering_tag = 'evc_tru'
+rmr_filtering_tag = 'evc_tru'
 ODO    = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
 FLAG_LOAD = 0
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
 
 
 Raw_data  = Rdp.extract_rawData(Directory, period)
-M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt', filtering_tag)
+M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt', rmr_filtering_tag)
 
-'''
-def hexToBin(x_hex):
-    x_bin = ''
-    if(x_hex == '0'):
-        x_bin = '0000'
-    elif(x_hex == '1'):
-        x_bin = '0001'
-    elif(x_hex == '2'):
-        x_bin = '0010'
-    elif(x_hex == '3'):
-        x_bin = '0011'
-    elif(x_hex == '4'):
-        x_bin = '0100'
-    elif(x_hex == '5'):
-        x_bin = '0101'
-    elif(x_hex == '6'):
-        x_bin = '0110'
-    elif(x_hex == '7'):
-        x_bin = '0111'
-    elif(x_hex == '8'):
-        x_bin = '1000'
-    elif(x_hex == '9'):
-        x_bin = '1001'
-    elif(x_hex == 'A' or x_hex == 'a'):
-        x_bin = '1010'
-    elif(x_hex == 'B' or x_hex == 'b'):
-        x_bin = '1011'
-    elif(x_hex == 'C' or x_hex == 'c'):
-        x_bin = '1100'
-    elif(x_hex == 'D' or x_hex == 'd'):
-        x_bin = '1101'
-    elif(x_hex == 'E' or x_hex == 'e'):
-        x_bin = '1011'
-    elif(x_hex == 'F' or x_hex == 'f'):
-        x_bin = '1111'
-    else:
-        exit(1)
-    return x_bin
-'''
+
 def evc_dru_search(M_treated_in, type_of_search, data):
     M_treated_out = []
     LLRU_ID1   = 101 # Mobile 1
@@ -130,8 +92,25 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                     hour    = int(bytes(time[0:5],'utf-8'),2)
                     minutes = int(bytes(time[5:11],'utf-8'),2)
                     seconds = int(bytes(time[11:17],'utf-8'),2)
-                    print(year,mounth,day,hour,minutes,seconds)
-                    print(m.OBU_GPS)
+                    TTS     = int(bytes(time[17:22],'utf-8'),2)
+
+                    Seconds = (float(seconds) + float(TTS/100)) % 60
+                    Minutes = (minutes + int((float(seconds) + float(TTS/100))/60)) % 60
+                    Hour    = hour + int(minutes/60)
+                    
+                    gps_field = m.decode_GPS()
+                    UTC_DATE = gps_field[GPS_DATE]
+                    UTC_TIME = gps_field[GPS_TIME]
+                    EVC_DATE = [day,mounth,year]
+                    EVC_TIME = [Hour,Minutes,Seconds]
+                    print('UTC date : '+UTC_DATE,'\t','UTC time : '+UTC_TIME)
+                    print('EVC date : ',EVC_DATE,'\t','UTC time : ',EVC_TIME)
+                    '''
+                    print(year,mounth,day)
+                    print(time[0:5],' ',time[5:11],' ',time[11:17],' ',time[17:22],' ',time[22:])
+                    print(hour,minutes,seconds,TTS)
+                    print(gps_field[GPS_TIME],'\t',Hour,Minutes,Seconds)'''
+                    print('=============================================================')
             elif(type_of_search == 'DRU_EVC_CORE'):
                 if((DRU_NID_PACKET == '01') and (DRU_NID_SOURCE == '02')):
                     print(int(DRU_M_DIAG,16))
