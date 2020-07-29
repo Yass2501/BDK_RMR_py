@@ -4,6 +4,7 @@ from Variables import *
 
 ############################ Classes ############################
 
+
 class Message(object):
 
     def __init__(self, Raw_data):
@@ -167,7 +168,149 @@ class Mess_treated(object):
         return Name
 
 
+
+class RMR_Message(object):
+    
+    time_for_sort = 0
+    date_for_sort = 0
+    double_check  = 0
+    
+    def __init__(self, OBU_LEN,OBU_VER,OBU_ID,OBU_ACK,OBU_GPS,OBU_DATA_TYPE, \
+                OBU_CUSTOM,OBU_DATA_LEN,OBU_DATA):
+
+        self.OBU_LEN = OBU_LEN
+        self.OBU_VER = OBU_VER
+        self.OBU_ID = OBU_ID
+        self.OBU_ACK = OBU_ACK
+        self.OBU_GPS = OBU_GPS
+        self.OBU_DATA_TYPE = OBU_DATA_TYPE
+        self.OBU_CUSTOM = OBU_CUSTOM
+        self.OBU_DATA_LEN = OBU_DATA_LEN
+        self.OBU_DATA = OBU_DATA
+
+    def decode_GPS(self):
+        
+        Index = findIndexof(self.OBU_GPS,',', 9)
+        gps_field = arrayAllocate('',10)
+        
+        gps_field[GPS_VALIDITY] = self.OBU_GPS[0:Index[0]]
+        gps_field[GPS_TIME] = self.OBU_GPS[Index[0]+1:Index[1]]
+        gps_field[GPS_DATE] = self.OBU_GPS[Index[1]+1:Index[2]]
+        gps_field[GPS_LATITUDE] = self.OBU_GPS[Index[2]+1:Index[3]]
+        gps_field[GPS_LONGITUDE] = self.OBU_GPS[Index[3]+1:Index[4]]
+        gps_field[GPS_ALTITUDE] = self.OBU_GPS[Index[4]+1:Index[5]]
+        gps_field[GPS_HDOP_STATUS] = self.OBU_GPS[Index[5]+1:Index[6]]
+        gps_field[GPS_SPEED] = self.OBU_GPS[Index[6]+1:Index[7]]
+        gps_field[GPS_DIRECTION] = self.OBU_GPS[Index[7]+1:Index[8]]
+        gps_field[GPS_SATELLITE_NB] = self.OBU_GPS[Index[8]+1:(len(self.OBU_GPS)-1)]
+        
+        return gps_field
+        
+    def print(self):
+
+        print('=================================================')
+        print('OBU Length : ',self.OBU_LEN)
+        print('OBU Version : '+self.OBU_VER)
+        print('OBU ID : '+self.OBU_ID)
+        print('OBU Ack : '+self.OBU_ACK)
+        print('OBU GPS : '+self.OBU_GPS)
+        print('OBU Data type : '+self.OBU_DATA_TYPE)
+        print('OBU Cust : '+self.OBU_CUSTOM)
+        print('OBU data length : ',self.OBU_DATA_LEN)
+        print('OBU data : ',self.OBU_DATA)
+        print('=================================================')
+
+    def name_frome_ID(self,Id_name_strings):
+        i = 0
+        Name = ''
+        for line in Id_name_strings:
+            Id = line[0:line.find('\t')]
+            Name = line[line.find('\t')+1:len(line)-1]
+            if(Id==self.OBU_ID):
+                break
+        return Name
+
+    
+
+
 ############################ Functions ############################
+
+
+def extract_and_decode_rawData(OBU_Proxy_dir, period, filter_obu_data_type):
+    temp1     = period[0]
+    temp2     = period[1]
+    period_rev = ['','']
+    period_rev[0] = temp1[4]+temp1[5]+temp1[2]+temp1[3]+temp1[0]+temp1[1]
+    period_rev[1] = temp2[4]+temp2[5]+temp2[2]+temp2[3]+temp2[0]+temp2[1]
+    date1_int = int(period_rev[0])
+    date2_int = int(period_rev[1])
+    
+    ListDir   = os.listdir('./'+OBU_Proxy_dir)  # List all directories present in OBU_proxy
+    Raw_data_decoded = []
+    i_rmr_mess = 0
+    index_G1 = 0
+    index_G1_end = 0
+    dir_flag = 0
+    for directory in ListDir:
+        #print('Directory : '+directory)
+        ListFiles = os.listdir('./'+OBU_Proxy_dir+'/'+directory)
+        dir_flag = 1
+        for filename in ListFiles:
+            filename_date = filename[2:4]+filename[5:7]+filename[8:10]
+            filename_date_int = int(filename_date)
+            if(date1_int <= filename_date_int <= date2_int):
+                if(dir_flag == 1):
+                    print('Directory : '+directory)
+                    dir_flag = 0
+                print('File name : '+filename)
+                f = open('./'+OBU_Proxy_dir+'/'+directory+'/'+filename,'r+')
+                lines = f.readlines()
+                for i in range(0,len(lines)):
+                    if((lines[i].find('<G1>') != -1)):
+                        k = i
+                        data_str = lines[i]
+                        while((lines[k].find('</G1>') == -1)):
+                            k = k + 1
+                            data_str = data_str + lines[k]
+                        index_G1     = data_str.find('<G1>')
+                        index_G1_end = data_str.find('</G1>')+5
+                        Index        = findIndexof(data_str, ';', 8)
+                        
+                        OBU_LEN       = str(int((data_str[(index_G1+4):(Index[0])]).encode().hex(),16))
+                        OBU_VER       = data_str[(Index[0]+1):Index[1]]
+                        OBU_ID        = data_str[(Index[1]+1):Index[2]]
+                        OBU_ACK       = data_str[(Index[2]+1):Index[3]]
+                        OBU_GPS       = data_str[(Index[3]+1):Index[4]]
+                        OBU_DATA_TYPE = data_str[(Index[4]+1):Index[5]]
+                        OBU_CUSTOM    = data_str[(Index[5]+1):Index[6]]
+                        OBU_DATA_LEN  = data_str[(Index[6]+1):Index[7]]
+                        OBU_DATA      = data_str[(Index[7]+1):index_G1_end-5]
+
+                        if(filter_obu_data_type == 'all'):
+                            Raw_data_decoded.append(RMR_Message(OBU_LEN,OBU_VER,OBU_ID,OBU_ACK,OBU_GPS,OBU_DATA_TYPE,OBU_CUSTOM,OBU_DATA_LEN,OBU_DATA))
+                            gps_field = Raw_data_decoded[i_rmr_mess].decode_GPS()
+                            Raw_data_decoded[i_rmr_mess].date_for_sort = dateStringToIntConvert(gps_field[GPS_DATE])
+                            obu_time = gps_field[GPS_TIME]
+                            Raw_data_decoded[i_rmr_mess].time_for_sort = int(obu_time[0:6])
+                            i_rmr_mess = i_rmr_mess + 1
+                        else:
+                            filter_sum = 0
+                            for filter in filter_obu_data_type:
+                                if(filter == int(OBU_DATA_TYPE)):
+                                    filter_sum = filter_sum + 1
+                            if(filter_sum >= 1):
+                                Raw_data_decoded.append(RMR_Message(OBU_LEN,OBU_VER,OBU_ID,OBU_ACK,OBU_GPS,OBU_DATA_TYPE,OBU_CUSTOM,OBU_DATA_LEN,OBU_DATA))
+                                gps_field = Raw_data_decoded[i_rmr_mess].decode_GPS()
+                                Raw_data_decoded[i_rmr_mess].date_for_sort = dateStringToIntConvert(gps_field[GPS_DATE])
+                                obu_time = gps_field[GPS_TIME]
+                                Raw_data_decoded[i_rmr_mess].time_for_sort = int(obu_time[0:6])
+                                i_rmr_mess = i_rmr_mess + 1
+                f.close()
+            
+    len_raw_data = i_rmr_mess
+    print('The number of messages to be treated : ',len_raw_data)
+    return Raw_data_decoded
+
 
 
 def extract_rawData(OBU_Proxy_dir, period):

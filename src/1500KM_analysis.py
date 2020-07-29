@@ -8,26 +8,22 @@ from Variables import *
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
 Name      = 'DSB IC3 5053' # 
-period    = ['120420','130520']
+period    = ['120420','250420']
 Directory = '../OBU_Proxy'
 KM_TARGET = 1500
-filtring_tag = 'comet_init'
+filter_obu_data_type = [14]
+
 ODO       = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
 FLAG_LOAD = 0
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
-if(FLAG_LOAD == 0):
-    print('Big load has been selected !'+'\r\n')
-    Raw_data  = Rdp.extract_rawData(Directory, period)
-    M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt', filtring_tag)
-else:
-    M_treated = Rdp.decode_filtered_rawData_1('RawData_filtered.txt', 'RawData_length.txt')
 
+RMR_Messages  = Rdp.extract_and_decode_rawData(Directory, period, filter_obu_data_type)
 
 f = open('id_train_mapping.txt','r+')
 id_name_map = f.readlines()
 f.close()
 
-M_treated_sorted = sorted(M_treated, key = lambda x: (x.date_for_sort,x.time_for_sort))
+RMR_Messages_sorted = sorted(RMR_Messages, key = lambda x: (x.date_for_sort,x.time_for_sort))
 
 ID = getIdFromName(Name, id_name_map)
 i  = 0
@@ -41,7 +37,7 @@ if(ODO == 1):
     KM_str = 'KM_ODO'
 else:
     KM_str = 'KM_GPS'
-for mess in M_treated_sorted:
+for mess in RMR_Messages_sorted:
     #print(mess.OBU_ID+'  '+ID)
     if(mess.OBU_ID == ID):
         index = findIndexof(mess.OBU_DATA, ',', 17)
@@ -78,10 +74,6 @@ if(IsFound):
     print(KM_str+' of train '+Name+': '+' with value ['+str(KM)+']')
 else:
     print('The value of '+str(KM_TARGET)+' km has not been find in this period')
-
-
-
-
 
 
 

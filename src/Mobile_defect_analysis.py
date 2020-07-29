@@ -2,6 +2,7 @@ import os
 from Variables import *
 from functions import *
 from Excel_mobile_defects import *
+from evc_tru import *
 import xlsxwriter
 import Raw_data_processing as Rdp
 import Statistics_processing as Sp
@@ -33,13 +34,18 @@ for i in range(0,len(p_cut)-1):
     period.append([period_tmp1,period_tmp2])
     print(i,period[i])
     index = i
-
+p0 = p_cut[0][0]+p_cut[0][1]+p_cut[0][3]+p_cut[0][4]+p_cut[0][6]+p_cut[0][7]
+p1 = p_cut[len(p_cut)-1][0]+p_cut[len(p_cut)-1][1]+p_cut[len(p_cut)-1][3]+p_cut[len(p_cut)-1][4]+p_cut[len(p_cut)-1][6]+p_cut[len(p_cut)-1][7]
 f.close()
 
 Trains = ['DSB MQ','NJ Desiro','LINT41 AR','NJ LINT41','DSB IC3','DSB ABs','LT LINT41']
 filtering_tag = 'report_md'
 Directory = '../OBU_Proxy'
-# If the files have ever been loaded for the appropriate periods select FLAG_LOAD = 1, else FLAG_LOAD = 0
+
+RMR_Messages  = Rdp.extract_and_decode_rawData(Directory, ['190520', '260520'], [2,14])
+
+
+'''
 FLAG_LOAD = 0
 
 #----------------------------------------------------- Time initialization ----------------------------------------------------
@@ -49,13 +55,13 @@ t = time.time()
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
 if(FLAG_LOAD == 0):
     print('Big load has been selected !'+'\r\n')
-    p0 = p_cut[0][0]+p_cut[0][1]+p_cut[0][3]+p_cut[0][4]+p_cut[0][6]+p_cut[0][7]
-    p1 = p_cut[len(p_cut)-1][0]+p_cut[len(p_cut)-1][1]+p_cut[len(p_cut)-1][3]+p_cut[len(p_cut)-1][4]+p_cut[len(p_cut)-1][6]+p_cut[len(p_cut)-1][7]
     print(p0,p1)
     Raw_data  = Rdp.extract_rawData(Directory,[p0,p1])
     M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt',filtering_tag)
 else:
     M_treated = Rdp.decode_filtered_rawData_1('RawData_filtered.txt', 'RawData_length.txt')
+
+
 
 
 f = open('id_train_mapping.txt','r+')
@@ -298,3 +304,6 @@ workbook.close()
 elapsed = time.time() - t
 print(' ============================ Time analysis ============================ ')
 print('Elapsed time : '+str(elapsed)+' sec')
+
+'''
+

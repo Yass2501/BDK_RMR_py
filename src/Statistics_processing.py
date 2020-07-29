@@ -32,9 +32,9 @@ def mobileDefectTotalOcc_compute(period, ID, M_treated_occTotal):
     return occ
 
         
-def trainOpTime_compute(period, ID, M_treated_tot):
+def trainOpTime_compute(period, ID, RMR_Messages):
     tuples = []
-    for mess in M_treated_tot:
+    for mess in RMR_Messages:
         gps_field = mess.decode_GPS()
         obu_date  = dateStringToIntConvert(gps_field[GPS_DATE])
         obu_data  = mess.OBU_DATA
@@ -74,9 +74,9 @@ def trainOpTime_compute(period, ID, M_treated_tot):
 
 
 
-def kmODO_compute(period, ID, M_treated_tot):
+def kmODO_compute(period, ID, RMR_Messages):
     tuples = []
-    for mess in M_treated_tot:
+    for mess in RMR_Messages:
         gps_field = mess.decode_GPS()
         obu_date  = dateStringToIntConvert(gps_field[GPS_DATE])
         obu_data  = mess.OBU_DATA
@@ -196,10 +196,10 @@ def kmODO_trainOpTime_compute(period, ID, M_treated_tot):
     
     
 
-def double_check(M_treated_occ):
-    for i in range(0,len(M_treated_occ)-1):
-        gps_field_curr = M_treated_occ[i].decode_GPS()
-        gps_field_next = M_treated_occ[i+1].decode_GPS()
+def double_check(RMR_Messages):
+    for i in range(0,len(RMR_Messages)-1):
+        gps_field_curr = RMR_Messages[i].decode_GPS()
+        gps_field_next = RMR_Messages[i+1].decode_GPS()
         if((gps_field_curr[GPS_DATE] == gps_field_next[GPS_DATE]) and (gps_field_curr[GPS_TIME] == gps_field_next[GPS_TIME]) \
-           and (M_treated_occ[i].OBU_ID == M_treated_occ[i+1].OBU_ID)):
-            M_treated_occ[i+1].double_check = 1
+           and (RMR_Messages[i].OBU_ID == RMR_Messages[i+1].OBU_ID)):
+            RMR_Messages[i+1].double_check = 1

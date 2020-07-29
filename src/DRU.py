@@ -32,7 +32,6 @@ def evc_dru_search(M_treated_in, type_of_search, data):
     for m in M_treated_in:
         if(m.OBU_DATA_TYPE == '2'):           
             data_hex = (m.OBU_DATA).encode().hex()
-            #data_hex = bytes(data_hex_str, "utf-8")
             TRU_NID_MESSAGE = data_hex[0:2]
             if(TRU_NID_MESSAGE == '09'):               # DRU Messages
                 L_MESSAGE        = data_hex[2:6]
@@ -51,7 +50,11 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                     DRU_NID_CHANNEL = data_hex[27:28]
                     DRU_L_TEXT      = data_hex[28:30]
                     DRU_X_TEXT      = data_hex[30:]
-                    #print(int(DRU_L_TEXT,16), len(DRU_X_TEXT)/2)
+                    '''
+                    dru_bytes = bytes.fromhex(DRU_X_TEXT)
+                    dru_ascii = dru_bytes.decode("ascii")
+                    print(dru_ascii)
+                    print('============================================================================================')'''
                 elif(DRU_NID_PACKET == '05'):
                     DRU_NID_SOURCE    = data_hex[22:24]
                     DRU_N_ITER        = data_hex[24:26]
@@ -73,10 +76,13 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                         DRU_Q_TEXT[i]        = data_hex[index+8:index+10]
                         DRU_L_TEXT[i]        = data_hex[index+10:index+12]
                         DRU_X_TEXT[i]        = data_hex[index+12:((index+12)+int(DRU_L_TEXT[i],16)*2)]
+                        dru_bytes = bytes.fromhex(DRU_X_TEXT[i])
+                        dru_ascii = dru_bytes.decode("ascii")
+                        print(dru_ascii, end=' ')
+                    print('\n============================================================================================')
+                    #print(DRU_N_ITER,DRU_L_TEXT,DRU_Q_TEXT,DRU_X_TEXT)
             if(type_of_search == 'DRU_EVC'):
                 if((DRU_NID_PACKET == '01') and (DRU_NID_SOURCE == '01')):
-                    #print(int(DRU_M_DIAG,16))
-                    #print(str(DATE[2]))
                     M_treated_out.append(m)
                     date = ''
                     time = ''
@@ -88,16 +94,13 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                     year   = int(bytes(date[0:7],'utf-8'),2)
                     mounth = int(bytes(date[7:11],'utf-8'),2)
                     day    = int(bytes(date[11:],'utf-8'),2)
-                    
                     hour    = int(bytes(time[0:5],'utf-8'),2)
                     minutes = int(bytes(time[5:11],'utf-8'),2)
                     seconds = int(bytes(time[11:17],'utf-8'),2)
                     TTS     = int(bytes(time[17:22],'utf-8'),2)
-
                     Seconds = (float(seconds) + float(TTS/100)) % 60
                     Minutes = (minutes + int((float(seconds) + float(TTS/100))/60)) % 60
                     Hour    = hour + int(minutes/60)
-                    
                     gps_field = m.decode_GPS()
                     UTC_DATE = gps_field[GPS_DATE]
                     UTC_TIME = gps_field[GPS_TIME]
@@ -105,11 +108,6 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                     EVC_TIME = [Hour,Minutes,Seconds]
                     print('UTC date : '+UTC_DATE,'\t','UTC time : '+UTC_TIME)
                     print('EVC date : ',EVC_DATE,'\t','UTC time : ',EVC_TIME)
-                    '''
-                    print(year,mounth,day)
-                    print(time[0:5],' ',time[5:11],' ',time[11:17],' ',time[17:22],' ',time[22:])
-                    print(hour,minutes,seconds,TTS)
-                    print(gps_field[GPS_TIME],'\t',Hour,Minutes,Seconds)'''
                     print('=============================================================')
             elif(type_of_search == 'DRU_EVC_CORE'):
                 if((DRU_NID_PACKET == '01') and (DRU_NID_SOURCE == '02')):
@@ -128,7 +126,8 @@ def evc_dru_search(M_treated_in, type_of_search, data):
                     print(DRU_X_TEXT, int(DRU_L_TEXT,16))
             elif(type_of_search == 'EVC_TEXT_MESSAGES'):
                 if((DRU_NID_PACKET == '05') and (DRU_NID_SOURCE == '01')):
-                    print(int(DRU_N_ITER,16), DRU_Q_TEXT)
+                    #print(int(DRU_N_ITER,16), DRU_Q_TEXT, DRU_X_TEXT)
+                    continue
 
     return M_treated_out
                         
@@ -144,75 +143,11 @@ LLRU_ID2   = 102 # Mobile 2
 LLRU_STATE = 0   # Defect
 
 data = 0
-type_of_search = 'DRU_EVC'
+type_of_search = 'EVC_TEXT_MESSAGES'
 
 M_treated_out = evc_dru_search(M_treated, type_of_search, data)
 
-    
-'''
 
-for m in M_treated:
-    if(m.OBU_DATA_TYPE == '2'):           
-        data_hex_str = (m.OBU_DATA).encode().hex()
-        data_hex = bytes(data_hex_str, "utf-8")
-        TRU_NID_MESSAGE = data_hex[0:2]
-        if(TRU_NID_MESSAGE == b'00'):               # JRU Messages
-            NID_MESSAGE = data_hex[2:4]
-            
-        if(TRU_NID_MESSAGE == b'09'):               # DRU Messages
-            L_MESSAGE        = data_hex[2:6]
-            DATE             = data_hex[6:10]
-            TIME_PADDING     = data_hex[10:16]
-            DRU_NID_PACKET   = data_hex[16:18]
-            DRU_L_PACKET     = data_hex[18:22]
-            VARIABLES_PACKET = data_hex[22:]
-            if(DRU_NID_PACKET == b'01'):
-                DRU_NID_SOURCE  = data_hex[22:24]
-                DRU_M_DIAG      = data_hex[24:27]
-                DRU_M_DIAG_INT  = int(DRU_M_DIAG,16)
-                if((DRU_M_DIAG_INT % 160 == LLRU_ID1) and (int(DRU_M_DIAG_INT / 160) == LLRU_STATE)):
-                    print(DRU_M_DIAG_INT)
-                DRU_NID_CHANNEL = data_hex[27:28]
-                DRU_L_TEXT      = data_hex[28:30]
-                DRU_X_TEXT      = data_hex[30:]
-            elif(DRU_NID_PACKET == b'05'):
-                DRU_NID_SOURCE    = data_hex[22:24]
-                DRU_N_ITER        = data_hex[24:26]
-                # Allocation
-                DRU_NID_DATA      = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_L_PACKET      = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_Q_TEXTCLASS   = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_Q_TEXTCONFIRM = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_Q_TEXT        = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_L_TEXT        = [b'0' for i in range(int(DRU_N_ITER,16))]
-                DRU_X_TEXT        = [b'0' for i in range(int(DRU_N_ITER,16))]
-                L_reste = int(len(data_hex[26:]) / int(DRU_N_ITER,16))
-                for i in range(0,int(DRU_N_ITER,16)):  # Loop on N_ITER
-                    index = 26 + L_reste*i
-                    DRU_NID_DATA[i]      = data_hex[index:index+2]
-                    DRU_L_PACKET[i]      = data_hex[index+2:index+4]
-                    DRU_Q_TEXTCLASS[i]   = data_hex[index+4:index+6]
-                    DRU_Q_TEXTCONFIRM[i] = data_hex[index+6:index+8]
-                    DRU_Q_TEXT[i]        = data_hex[index+8:index+10]
-                    DRU_L_TEXT[i]        = data_hex[index+10:index+12]
-                    DRU_X_TEXT[i]        = data_hex[index+12:((index+12)+int(DRU_L_TEXT[i],16)*2)]
-                
-                DRU_NID_DATA     = []
-                DRU_L_DATA       = []
-                DRU_Q_TEXT_CLASS = [] 
-                for i in range(int(DRU_N_ITER,16)):
-                    DRU_NID_DATA    = data_hex[26:28]
-                    DRU_L_DATA      
-                    print(DRU_NID_DATA)
-                
-            
-            if(DRU_NID_PACKET == b'01'):
-                DRU_NID_SOURCE = data_hex[22:24]
-                if(DRU_NID_SOURCE == b'07'):
-                    DRU_M_DIAG = data_hex[24:27]
-                    DRU_NID_CHANNEL = data_hex[27:28]
-                    if((int(DRU_M_DIAG,16)%160) == 101 or (int(DRU_M_DIAG,16)%160) == 102):
-                        print(int(DRU_M_DIAG,16))'''
                 
             
 
