@@ -5,8 +5,8 @@ import time
 
 Directory             = '../OBU_Proxy'
 filter_obu_data_type  = 'all'      # 'all' for all messages, [2,16,14,...] for the messages type you want
-d0 = date(2020, 3, 7)
-d1 = date(2020, 5, 2)
+d0 = date(2020, 1, 1)
+d1 = date(2020, 6, 1)
 Nprocs   = 8
 para = 1
 periods = generate_periods(d0, d1, Nprocs)
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
         finish = time.perf_counter()
         print(finish - start)
-        '''
+        
 
         for iproc in range(0,Nprocs):
             f = open('FilePROC'+str(iproc)+'.txt', 'r')
@@ -54,10 +54,10 @@ if __name__ == '__main__':
                     RMR_Messages.append(RMR_Message(OBU_LEN,OBU_VER,OBU_ID,OBU_ACK,OBU_GPS,OBU_DATA_TYPE,OBU_CUSTOM,OBU_DATA_LEN,OBU_DATA))
                     
             print('End of File : FilePROC'+str(iproc)+'.txt')
-            f.close()'''
-        '''
+            f.close()
+        
         finish = time.perf_counter()
-        print(finish - start)'''
+        print(finish - start)
         
         
     else:

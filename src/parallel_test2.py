@@ -1,51 +1,36 @@
 import multiprocessing
 from Raw_data_processing import *
+from date_time_handling import *
 import time
 
-period0               = ['070320','140320']
-period1               = ['140320','210320']
-period2               = ['210320','280320']
-period3               = ['280320','040420']
-period4               = ['040420','110420']
-period5               = ['110420','180420']
-period6               = ['180420','250420']
-period7               = ['250420','020520']
-period                = [period0,period1,period2,period3,period4,period5,period6, period7]
-#period = [period0, period1]
 Directory             = '../OBU_Proxy'
-filter_obu_data_type  = 'all'      # 'all' for all messages, [2,16,14,...] for the messages type you want
-Nprocs   = len(period)
+filter_obu_data_type  = [2,14]      # 'all' for all messages, [2,16,14,...] for the messages type you want
+d0 = date(2018, 12, 10)
+d1 = date(2020, 6, 1)
+Nprocs   = 8
 para = 1
+periods = generate_periods(d0, d1, Nprocs)
+print(periods)
 
 if __name__ == '__main__':
 
     if(para == 1):
         start = time.perf_counter()
-        manager = multiprocessing.Manager()
-        return_dict = manager.dict()
-        jobs = []
+        p = multiprocessing.Pool(processes=Nprocs)
+        RMR_Messages = p.starmap(extract_and_decode_rawData_para, [(Directory, periods[i], filter_obu_data_type) for i in range(Nprocs)])
+        p.close()
+        p.join()
+        finish = time.perf_counter()
+        print(finish - start)
+        size = 0
         for i in range(Nprocs):
-            p = multiprocessing.Process(target=extract_and_decode_rawData_para, args=(Directory,period[i],filter_obu_data_type,i,return_dict))
-            p.start()
-            jobs.append(p)
-        for proc in jobs:
-            proc.join()
-        finish = time.perf_counter()
-        print(finish - start)
-
-        start = time.perf_counter()
-        list_RMR = return_dict.values()
-        finish = time.perf_counter()
-        print(finish - start)
-        
-        sum = 0
-        for l in list_RMR:
-            sum = sum + len(l)
-        print('LENGTH MESSAGES : '+str(sum))
-        
+            size = size + len(RMR_Messages[i])
+            
+        print('LENGTH MESSAGES : ', size)
     else:
         start = time.perf_counter()
-        RMR_Messages = extract_and_decode_rawData(Directory, [period0[0],period7[1]], filter_obu_data_type)
+        RMR_Messages = extract_and_decode_rawData_para(Directory, periods[0], filter_obu_data_type)
         finish = time.perf_counter()
         print(finish - start)
-        print('LENGTH MESSAGES : '+str(len(RMR_Messages)))
+        size = len(RMR_Messages)
+        print('LENGTH MESSAGES : ', size)

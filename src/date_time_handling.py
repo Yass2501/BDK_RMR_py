@@ -1,6 +1,5 @@
 from datetime import datetime, date, timedelta
 import math
-import mpi4py
 
 
 def nearest_multiple(input_number, multiple):
@@ -35,8 +34,8 @@ def generate_periods(date0, date1, interval):
         date_fisrt = date_iter
         date_iter = date_iter + timedelta(days=days_per_period[i])
         periods.append([date_fisrt,date_iter])
-    print(days_per_period, sum(days_per_period))
-    print('Total of days : '+str(total_of_days))
+    #print(days_per_period, sum(days_per_period))
+    #print('Total of days : '+str(total_of_days))
     PERIODS = []
     for p in periods:
         tmp0 = str(p[0])

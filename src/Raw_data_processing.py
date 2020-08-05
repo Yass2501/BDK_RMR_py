@@ -313,7 +313,7 @@ def extract_and_decode_rawData(OBU_Proxy_dir, period, filter_obu_data_type):
 
 
 	
-def extract_and_decode_rawData_para(OBU_Proxy_dir, period, filter_obu_data_type, procnum, return_dict):
+def extract_and_decode_rawData_para(OBU_Proxy_dir, period, filter_obu_data_type):
     temp1     = period[0]
     temp2     = period[1]
     period_rev = ['','']
@@ -363,6 +363,10 @@ def extract_and_decode_rawData_para(OBU_Proxy_dir, period, filter_obu_data_type,
                         OBU_DATA_LEN  = data_str[(Index[6]+1):Index[7]]
                         OBU_DATA      = data_str[(Index[7]+1):index_G1_end-5]
 
+                        if(len(OBU_DATA_TYPE)>2):
+                            print(OBU_DATA_TYPE)
+                            exit(1)
+
                         if(filter_obu_data_type == 'all'):
                             Raw_data_decoded.append(RMR_Message(OBU_LEN,OBU_VER,OBU_ID,OBU_ACK,OBU_GPS,OBU_DATA_TYPE,OBU_CUSTOM,OBU_DATA_LEN,OBU_DATA))
                             gps_field = Raw_data_decoded[i_rmr_mess].decode_GPS()
@@ -386,8 +390,8 @@ def extract_and_decode_rawData_para(OBU_Proxy_dir, period, filter_obu_data_type,
             
     len_raw_data = i_rmr_mess
     print('The number of messages to be treated : ',len_raw_data)
-    return_dict[procnum] = Raw_data_decoded
-    #return Raw_data_decoded
+    #return_dict[procnum] = Raw_data_decoded
+    return Raw_data_decoded
 
 
 

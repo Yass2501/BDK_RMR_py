@@ -81,6 +81,8 @@ def findIndexof(line, char, size):
     index = arrayAllocate(1,size)
     j = 0
     for i in range(0,len(line)):
+        if((line[i] == ';') and (line[i+1] == ';')):
+            continue
         if((line[i] == char) and (j < size)):
             index[j] = i
             j = j + 1

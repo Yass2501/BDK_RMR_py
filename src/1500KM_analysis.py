@@ -1,80 +1,105 @@
-import os
-import xlsxwriter
-import Raw_data_processing as Rdp
-import Statistics_processing as Sp
-from functions import *
-from Variables import *
+import multiprocessing
+from Raw_data_processing import *
+from date_time_handling import *
+import time
+import numpy as np
+
+def check_KM_ODO_or_KM_GPS(TrainID, TrainName, RMR_Messages, KM_TARGET, ODO_or_GPS):
+        COMET_KM_ODO_prev   = np.inf
+        COMET_KM_GPS_prev   = np.inf
+        COMET_KM_prev = np.inf
+        IsFound = False
+        for m in RMR_Messages:
+            if(m.OBU_ID == TrainID):
+                index = findIndexof(m.OBU_DATA, ',', 17)
+                gps_field      = m.decode_GPS()
+                OBU_DATE       = gps_field[GPS_DATE]
+                OBU_TIME       = gps_field[GPS_TIME]
+                OBU_DATA       = m.OBU_DATA
+                COMET_KM_ODO   = int(OBU_DATA[(index[7]+1):(index[8])])
+                COMET_KM_GPS   = int(OBU_DATA[(index[6]+1):(index[7])])
+                if(ODO_or_GPS == 'ODO'):
+                    COMET_KM = COMET_KM_ODO
+                if(ODO_or_GPS == 'GPS'):
+                    COMET_KM = COMET_KM_GPS
+                if(COMET_KM >= KM_TARGET and COMET_KM_prev <= KM_TARGET):
+                    IsFound = True
+                    break
+                if(ODO_or_GPS == 'ODO'):
+                    COMET_KM_prev = COMET_KM_ODO
+                if(ODO_or_GPS == 'GPS'):
+                    COMET_KM_prev = COMET_KM_GPS
+                OBU_DATE_prev       = OBU_DATE
+                OBU_TIME_prev       = OBU_TIME
+        if(IsFound):
+            hour = str(OBU_TIME)
+            hour = hour[0]+hour[1]+':'+hour[2]+hour[3]+':'+hour[4]+hour[5]
+            hour_prev = str(OBU_TIME_prev)
+            hour_prev = hour_prev[0]+hour_prev[1]+':'+hour_prev[2]+hour_prev[3]+':'+hour_prev[4]+hour_prev[5]
+            print('===============================================================================')
+            print('[20'+OBU_DATE_prev[4]+OBU_DATE_prev[5]+'-'+OBU_DATE_prev[2]+OBU_DATE_prev[3]+'-'+OBU_DATE_prev[0]+OBU_DATE_prev[1]+'  '+hour_prev+']',end=' ')
+            print('KM_'+ODO_or_GPS+' of train '+TrainName+': '+' with value ['+str(COMET_KM_prev)+']')
+            print('[20'+OBU_DATE[4]+OBU_DATE[5]+'-'+OBU_DATE[2]+OBU_DATE[3]+'-'+OBU_DATE[0]+OBU_DATE[1]+'  '+hour+']',end=' ')
+            print('KM_'+ODO_or_GPS+' of train '+TrainName+': '+' with value ['+str(COMET_KM)+']')
+            print('===============================================================================')
+        else:
+            print('The value of '+str(KM_TARGET)+' km has not been find in this period')
 
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
-Name      = 'DSB IC3 5053' # 
-period    = ['120420','250420']
 Directory = '../OBU_Proxy'
 KM_TARGET = 1500
 filter_obu_data_type = [14]
+d0 = date(2020, 5, 1)
+d1 = date(2020, 6, 2)
+Nprocs   = 8
+if(Nprocs > 1):
+    para = 1
+else:
+    para = 0
+periods = generate_periods(d0, d1, Nprocs)
+ODO       = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS
+print(periods)
 
-ODO       = 1  # if ODO = 1 --> KM_ODO else --> KM_GPS 
-FLAG_LOAD = 0
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
 
-RMR_Messages  = Rdp.extract_and_decode_rawData(Directory, period, filter_obu_data_type)
+if __name__ == '__main__':
 
-f = open('id_train_mapping.txt','r+')
-id_name_map = f.readlines()
-f.close()
+    if(para == 1):
+        start = time.perf_counter()
+        p = multiprocessing.Pool(processes=Nprocs)
+        RMR_Messages = p.starmap(extract_and_decode_rawData_para, [(Directory, periods[i], filter_obu_data_type) for i in range(Nprocs)])
+        p.close()
+        p.join()
+        RMR_Messages_reduce = []
+        for i in range(0,Nprocs):
+            for m in RMR_Messages[i]:
+                RMR_Messages_reduce.append(m)
+        RMR_Messages_sorted = sorted(RMR_Messages_reduce, key = lambda x: (x.date_for_sort,x.time_for_sort))
+        del RMR_Messages_reduce
+        del RMR_Messages
+        finish = time.perf_counter()
+        print('Time for loading RMR Messages : ', finish - start)
+    else:
+        start = time.perf_counter()
+        RMR_Messages = extract_and_decode_rawData_para(Directory, periods[0], filter_obu_data_type)
+        RMR_Messages_sorted = sorted(RMR_Messages, key = lambda x: (x.date_for_sort,x.time_for_sort))
+        del RMR_Messages
+        finish = time.perf_counter()
+        print('Time for loading RMR Messages : ', finish - start)
 
-RMR_Messages_sorted = sorted(RMR_Messages, key = lambda x: (x.date_for_sort,x.time_for_sort))
+    
+    TrainName = ['DSB IC3 5042','DSB IC3 5058','DSB IC3 5059']
+    ODO_or_GPS = 'ODO'
+    TrainID   = []
+    f = open('id_train_mapping.txt','r+')
+    id_name_map = f.readlines()
+    f.close()
+    for train_name in TrainName:
+        TrainID.append(getIdFromName(train_name, id_name_map))
 
-ID = getIdFromName(Name, id_name_map)
-i  = 0
-KM_ODO_prev   = 10000000
-KM_GPS_prev   = 10000000
-KM_prev       = 10000000
-obu_date_prev = ''
-obu_time_prev = ''
-IsFound = False
-if(ODO == 1):
-    KM_str = 'KM_ODO'
-else:
-    KM_str = 'KM_GPS'
-for mess in RMR_Messages_sorted:
-    #print(mess.OBU_ID+'  '+ID)
-    if(mess.OBU_ID == ID):
-        index = findIndexof(mess.OBU_DATA, ',', 17)
-        gps_field      = mess.decode_GPS()
-        obu_date       = gps_field[GPS_DATE]
-        obu_time       = gps_field[GPS_TIME]
-        obu_data       = mess.OBU_DATA
-        KM_ODO         = int(obu_data[(index[7]+1):(index[8])])
-        KM_GPS         = int(obu_data[(index[6]+1):(index[7])])
-        if(ODO == 1):
-            KM = KM_ODO
-        else:
-            KM = KM_GPS
-        print('KM_ODO :', KM_ODO,'\t','KM_GPS :', KM_GPS,'\t','OBU Date :',obu_date)
-        if(KM >= KM_TARGET and KM_prev <= KM_TARGET):
-            IsFound = True
-            break
-        KM_GPS_prev   = KM_GPS
-        KM_ODO_prev   = KM_ODO
-        if(ODO == 1):
-            KM_prev = KM_ODO_prev
-        else:
-            KM_prev = KM_GPS_prev
-        obu_date_prev = obu_date
-        obu_time_prev = obu_time
-if(IsFound):
-    hour = str(obu_time)
-    hour = hour[0]+hour[1]+':'+hour[2]+hour[3]+':'+hour[4]+hour[5]
-    hour_prev = str(obu_time_prev)
-    hour_prev = hour_prev[0]+hour_prev[1]+':'+hour_prev[2]+hour_prev[3]+':'+hour_prev[4]+hour_prev[5]
-    print('[20'+obu_date_prev[4]+obu_date_prev[5]+'-'+obu_date_prev[2]+obu_date_prev[3]+'-'+obu_date_prev[0]+obu_date_prev[1]+'  '+hour_prev+']',end=' ')
-    print(KM_str+' of train '+Name+': '+' with value ['+str(KM_prev)+']')
-    print('[20'+obu_date[4]+obu_date[5]+'-'+obu_date[2]+obu_date[3]+'-'+obu_date[0]+obu_date[1]+'  '+hour+']',end=' ')
-    print(KM_str+' of train '+Name+': '+' with value ['+str(KM)+']')
-else:
-    print('The value of '+str(KM_TARGET)+' km has not been find in this period')
-
+    for i in range(len(TrainName)):
+        check_KM_ODO_or_KM_GPS(TrainID[i], TrainName[i], RMR_Messages_sorted, KM_TARGET, ODO_or_GPS)
 
 
 
