@@ -1,5 +1,6 @@
-from datetime import datetime, date, timedelta
+#from datetime import datetime, date, timedelta
 import math
+import datetime
 
 
 def nearest_multiple(input_number, multiple):
@@ -32,16 +33,36 @@ def generate_periods(date0, date1, interval):
     periods = []
     for i in range(interval):
         date_fisrt = date_iter
-        date_iter = date_iter + timedelta(days=days_per_period[i])
-        periods.append([date_fisrt,date_iter])
-    #print(days_per_period, sum(days_per_period))
-    #print('Total of days : '+str(total_of_days))
-    PERIODS = []
+        date_iter = date_iter + datetime.timedelta(days=days_per_period[i])
+        periods.append([date_fisrt, date_iter])
+    return periods
+
+def print_date(date, format):
+    print(date.strftime(format))
+	
+def generate_periods2(date0, days_per_period, Nperiods):
+    periods = []
+    date_iter = date0
+    for i in range(Nperiods):
+        date_fisrt = date_iter
+        date_iter = date_iter + datetime.timedelta(days=days_per_period)
+        periods.append([date_fisrt, date_iter])
+    return periods
+
+if __name__ == '__main__':
+    t = datetime.date(2020,8,6)
+    #print(t.strftime('%Y%m%d'))
+    
+    date0 = datetime.date(2020,8,6)
+    date1 = datetime.date(2020,10,6)
+    interval = 8
+    periods = generate_periods2(date0, 7, 5)
+    format = '%Y%m%d'
     for p in periods:
-        tmp0 = str(p[0])
-        tmp1 = str(p[1])
-        PERIODS.append([tmp0[8]+tmp0[9]+tmp0[5]+tmp0[6]+tmp0[2]+tmp0[3],tmp1[8]+tmp1[9]+tmp1[5]+tmp1[6]+tmp1[2]+tmp1[3]])
-    return PERIODS
+        print(p[0].strftime(format),p[1].strftime(format))
+
+
+    
 
 
 

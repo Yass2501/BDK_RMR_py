@@ -2,15 +2,15 @@ import multiprocessing
 from Raw_data_processing import *
 from date_time_handling import *
 import time
+import datetime
 
 Directory             = '../OBU_Proxy'
 filter_obu_data_type  = [2,14]      # 'all' for all messages, [2,16,14,...] for the messages type you want
-d0 = date(2018, 12, 10)
-d1 = date(2020, 6, 1)
+d0 = datetime.date(2018, 12, 10)
+d1 = datetime.date(2020, 6, 1)
 Nprocs   = 8
 para = 1
 periods = generate_periods(d0, d1, Nprocs)
-print(periods)
 
 if __name__ == '__main__':
 

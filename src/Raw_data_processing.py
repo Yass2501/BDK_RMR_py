@@ -314,13 +314,9 @@ def extract_and_decode_rawData(OBU_Proxy_dir, period, filter_obu_data_type):
 
 	
 def extract_and_decode_rawData_para(OBU_Proxy_dir, period, filter_obu_data_type):
-    temp1     = period[0]
-    temp2     = period[1]
-    period_rev = ['','']
-    period_rev[0] = temp1[4]+temp1[5]+temp1[2]+temp1[3]+temp1[0]+temp1[1]
-    period_rev[1] = temp2[4]+temp2[5]+temp2[2]+temp2[3]+temp2[0]+temp2[1]
-    date1_int = int(period_rev[0])
-    date2_int = int(period_rev[1])
+    
+    date1_int = int(period[0].strftime('%y%m%d'))
+    date2_int = int(period[1].strftime('%y%m%d'))
     
     ListDir   = os.listdir('./'+OBU_Proxy_dir)  # List all directories present in OBU_proxy
     Raw_data_decoded = []
@@ -630,6 +626,33 @@ def getNames(Train_type, id_name_map):
 
 
 def list_separation(M_treated):
+    M_treated_occ_1    = []
+    M_treated_occ_2    = []
+    M_treated_occTotal = []
+    M_treated_tot      = []
+    for mess in M_treated:
+        if(mess.OBU_DATA_TYPE == '2'):
+            data = mess.OBU_DATA
+            data_hex = data.encode().hex()
+            TRU_NID_MESSAGE = int(data_hex[0:2],16)
+            if(TRU_NID_MESSAGE == 9):
+                DRU_NID_PACKET   = int(data_hex[16:18],16)
+                if(DRU_NID_PACKET == 5):
+                    DRU_Q_TEXT = int(data_hex[34:36],16)
+                    if(DRU_Q_TEXT == 57):
+                        M_treated_occTotal.append(mess)
+        if(mess.OBU_DATA_TYPE == '14'):
+            M_treated_tot.append(mess)
+        if((mess.OBU_DATA_TYPE == '2') and (mess.OBU_DATA.find(MOBILE_DEFECT_1) != -1)):
+            M_treated_occ_1.append(mess)
+        if((mess.OBU_DATA_TYPE == '2') and (mess.OBU_DATA.find(MOBILE_DEFECT_2) != -1)):
+            M_treated_occ_2.append(mess)
+
+    return [M_treated_tot,M_treated_occ_1,M_treated_occ_2,M_treated_occTotal]
+
+
+
+def RMR_Messages_split(RMR_Messages, obu_data_type_list):
     M_treated_occ_1    = []
     M_treated_occ_2    = []
     M_treated_occTotal = []

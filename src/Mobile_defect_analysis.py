@@ -4,64 +4,30 @@ from functions import *
 from Excel_mobile_defects import *
 from evc_tru import *
 import xlsxwriter
-import Raw_data_processing as Rdp
+from Raw_data_processing import *
 import Statistics_processing as Sp
 import time as time
+from date_time_handling import *
+import datetime
+
+
+t = time.time()  # In order to estimate the time needed to run the code
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
-# Choose the periods and the families of train studied
 
-f = open('period.csv','r+')
-p = f.readlines()
-for ip in p:
-    print(ip)
-print(p)
-print(len(p))
-period = []
-period_tmp1 = []
-period_tmp2 = []
-p_cut = []
-index = 0
-for i in range(0,len(p)):
-    if(p[i] == '\n'):
-        index = i
-        break
-    else:
-        p_cut.append(p[i])
-for i in range(0,len(p_cut)-1):
-    period_tmp1 = p_cut[i][0]+p_cut[i][1]+p_cut[i][3]+p_cut[i][4]+p_cut[i][6]+p_cut[i][7]
-    period_tmp2 = p_cut[i+1][0]+p_cut[i+1][1]+p_cut[i+1][3]+p_cut[i+1][4]+p_cut[i+1][6]+p_cut[i+1][7]
-    period.append([period_tmp1,period_tmp2])
-    print(i,period[i])
-    index = i
-p0 = p_cut[0][0]+p_cut[0][1]+p_cut[0][3]+p_cut[0][4]+p_cut[0][6]+p_cut[0][7]
-p1 = p_cut[len(p_cut)-1][0]+p_cut[len(p_cut)-1][1]+p_cut[len(p_cut)-1][3]+p_cut[len(p_cut)-1][4]+p_cut[len(p_cut)-1][6]+p_cut[len(p_cut)-1][7]
-f.close()
-
+days_per_period = 7
+Nperiods = 6
+date0 = datetime.date(2020,6,26)
 Trains = ['DSB MQ','NJ Desiro','LINT41 AR','NJ LINT41','DSB IC3','DSB ABs','LT LINT41']
 filtering_tag = 'report_md'
 Directory = '../OBU_Proxy'
+filter_obu_data_type = [14]
 
-RMR_Messages  = Rdp.extract_and_decode_rawData(Directory, ['190520', '260520'], [2,14])
-
-
-'''
-FLAG_LOAD = 0
-
-#----------------------------------------------------- Time initialization ----------------------------------------------------
-# In order to estimate the time needed to run the code
-t = time.time()
 
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
-if(FLAG_LOAD == 0):
-    print('Big load has been selected !'+'\r\n')
-    print(p0,p1)
-    Raw_data  = Rdp.extract_rawData(Directory,[p0,p1])
-    M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt',filtering_tag)
-else:
-    M_treated = Rdp.decode_filtered_rawData_1('RawData_filtered.txt', 'RawData_length.txt')
 
-
+periods = generate_periods2(date0, days_per_period, Nperiods)
+RMR_Messages  = extract_and_decode_rawData_para(Directory, periods[0], filter_obu_data_type)
 
 
 f = open('id_train_mapping.txt','r+')

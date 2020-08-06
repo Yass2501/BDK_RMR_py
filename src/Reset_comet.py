@@ -1,78 +1,65 @@
-import os
-import xlsxwriter
-import Raw_data_processing as Rdp
-import Statistics_processing as Sp
-from functions import *
-from Variables import *
+import multiprocessing
+from Raw_data_processing import *
+from date_time_handling import *
+from comet_init_functions import *
+import time
+import numpy as np
 
 
 #----------------------------------------------------- Inputs ----------------------------------------------------
-Name      = 'LT LINT41 2034' # 
-period    = ['290120','030320']
-Directory = 'OBU_Proxy'
-FLAG_LOAD = 0
+Directory = '../OBU_Proxy'
+KM_TARGET = 1500
+filter_obu_data_type = [14]
+d0 = date(2020, 5, 1)
+d1 = date(2020, 7, 30)
+Nprocs   = 8
+TrainName = ['LINT41 AR 1018']
+ODO_or_GPS = 'ODO'
+print_successive = 1
+#-----------------------------------------------------------------------------------------------------------------
+if(Nprocs > 1):
+    para = 1
+else:
+    para = 0
+periods = generate_periods(d0, d1, Nprocs)
+print(periods)
+
 #----------------------------------------------------- Raw data loading ----------------------------------------------------
-if(FLAG_LOAD == 0):
-    print('Big load has been selected !'+'\r\n')
-    Raw_data  = Rdp.extract_rawData(Directory, period)
-    M_treated = Rdp.decode_filtered_rawData_0(Raw_data, 'RawData_filtered.txt', 'RawData_length.txt','14')
-else:
-    M_treated = Rdp.decode_filtered_rawData_1('RawData_filtered.txt', 'RawData_length.txt')
 
+if __name__ == '__main__':
 
-f = open('id_train_mapping.txt','r+')
-id_name_map = f.readlines()
-f.close()
+    if(para == 1):
+        start = time.perf_counter()
+        p = multiprocessing.Pool(processes=Nprocs)
+        RMR_Messages = p.starmap(extract_and_decode_rawData_para, [(Directory, periods[i], filter_obu_data_type) for i in range(Nprocs)])
+        p.close()
+        p.join()
+        RMR_Messages_reduce = []
+        for i in range(0,Nprocs):
+            for m in RMR_Messages[i]:
+                RMR_Messages_reduce.append(m)
+        RMR_Messages_sorted = sorted(RMR_Messages_reduce, key = lambda x: (x.date_for_sort,x.time_for_sort))
+        del RMR_Messages_reduce
+        del RMR_Messages
+        finish = time.perf_counter()
+        print('Time for loading RMR Messages : ', finish - start)
+    else:
+        start = time.perf_counter()
+        RMR_Messages = extract_and_decode_rawData_para(Directory, periods[0], filter_obu_data_type)
+        RMR_Messages_sorted = sorted(RMR_Messages, key = lambda x: (x.date_for_sort,x.time_for_sort))
+        del RMR_Messages
+        finish = time.perf_counter()
+        print('Time for loading RMR Messages : ', finish - start)
 
-M_treated_sorted   = sorted(M_treated, key = lambda x: (x.date_for_sort,x.time_for_sort))
+    TrainID   = []
+    f = open('id_train_mapping.txt','r+')
+    id_name_map = f.readlines()
+    f.close()
+    for train_name in TrainName:
+        TrainID.append(getIdFromName(train_name, id_name_map))
 
-ID = getIdFromName(Name, id_name_map)
-i  = 0
-
-ToT_prev = 0
-KM_GPS_prev   = 10000000
-KM_ODO_prev   = 10000000
-obu_date_prev = ''
-obu_time_prev = ''
-IsReset       = False
-for mess in M_treated_sorted:
-    if(mess.OBU_ID == ID):
-        index = findIndexof(mess.OBU_DATA, ',', 17)
-        gps_field      = mess.decode_GPS()
-        obu_date       = gps_field[GPS_DATE]
-        obu_time       = gps_field[GPS_TIME]
-        obu_data       = mess.OBU_DATA
-        ToT            = int(obu_data[(index[0]+1):(index[1])])
-        KM_ODO         = int(obu_data[(index[7]+1):(index[8])])
-        KM_GPS         = int(obu_data[(index[6]+1):(index[7])])
-        '''print('ToT :', ToT,'OBU Date :',obu_date)
-        print('KM_GPS :', KM_GPS,'OBU Date :',obu_date)
-        print('KM_ODO :', KM_ODO,'OBU Date :',obu_date)'''
-        print('ToT :', ToT,'KM_ODO :', KM_ODO,'OBU Date :',obu_date)
-        #print('============================================')
-        if(ToT < ToT_prev):
-            IsReset = True
-            break
-        KM_GPS_prev = KM_GPS
-        KM_ODO_prev = KM_ODO
-        ToT_prev   = ToT
-        obu_date_prev = obu_date
-        obu_time_prev = obu_time
-if(IsReset):
-    hour = str(obu_time)
-    hour = hour[0]+hour[1]+':'+hour[2]+hour[3]+':'+hour[4]+hour[5]
-    hour_prev = str(obu_time_prev)
-    hour_prev = hour_prev[0]+hour_prev[1]+':'+hour_prev[2]+hour_prev[3]+':'+hour_prev[4]+hour_prev[5]
-    print('[20'+obu_date_prev[4]+obu_date_prev[5]+'-'+obu_date_prev[2]+obu_date_prev[3]+'-'+obu_date_prev[0]+obu_date_prev[1]+'  '+hour_prev+']',end=' ')
-    print('TRAIN_OP_TIME of train '+Name+': '+' with value ['+str(ToT_prev)+']; ',end=' ')
-    print('KM_GPS is : '+str(KM_GPS_prev)+'; ', end=' ')
-    print('KM_ODO is : '+str(KM_ODO_prev))
-    print('[20'+obu_date[4]+obu_date[5]+'-'+obu_date[2]+obu_date[3]+'-'+obu_date[0]+obu_date[1]+'  '+hour+']',end=' ')
-    print('TRAIN_OP_TIME of train '+Name+': '+' with value ['+str(ToT)+']; ',end=' ')
-    print('KM_GPS is : '+str(KM_GPS)+'; ', end=' ')
-    print('KM_ODO is : '+str(KM_ODO))
-else:
-    print('No reset comet has been detected in this period')
+    for i in range(len(TrainName)):
+        check_reset_COMET(TrainID[i], TrainName[i], RMR_Messages_sorted, ODO_or_GPS, print_successive)
 
 
 
